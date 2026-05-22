@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkSmart — Gestion de Parking</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#e8f4fd;--bg2:#d0eaf8;--surface:#fff;--surface2:#f0f8ff;
+  --border:#b8d9ef;--accent:#0077c8;--accent2:#00b894;--accent3:#0099e6;
+  --red:#e84393;--text:#1a3a5c;--muted:#5a85a8;
+  --moto:#6c5ce7;--voiture:#00b894;--ticket:#f39c12;
+  --radius:12px;--shadow:0 4px 20px rgba(0,119,200,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,#0077c8 0%,#00b4d8 40%,#90e0ef 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;}
+#login-screen.hidden{display:none;}
+.login-bg-circles{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.login-bg-circles span{position:absolute;border-radius:50%;background:rgba(255,255,255,.08);animation:floatCircle 8s ease-in-out infinite;}
+.login-bg-circles span:nth-child(1){width:400px;height:400px;top:-100px;left:-100px;animation-delay:0s;}
+.login-bg-circles span:nth-child(2){width:250px;height:250px;bottom:-50px;right:-50px;animation-delay:2s;}
+.login-bg-circles span:nth-child(3){width:180px;height:180px;top:40%;left:10%;animation-delay:4s;}
+.login-bg-circles span:nth-child(4){width:120px;height:120px;top:20%;right:15%;animation-delay:1s;}
+@keyframes floatCircle{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-20px) scale(1.05);}}
+.login-card{background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-radius:24px;padding:48px 40px;width:420px;max-width:95vw;box-shadow:0 30px 80px rgba(0,50,120,.3);position:relative;z-index:1;animation:loginSlide .6s cubic-bezier(.16,1,.3,1) both;}
+@keyframes loginSlide{from{opacity:0;transform:translateY(30px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-logo-mark{font-size:40px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1;}
+.login-logo-sub{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px;}
+.login-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;text-align:center;}
+.login-subtitle{font-size:13px;color:var(--muted);text-align:center;margin-bottom:32px;}
+.login-form-group{margin-bottom:18px;}
+.login-label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin-bottom:8px;}
+.login-input{width:100%;background:#f0f8ff;border:2px solid #b8d9ef;color:var(--text);padding:13px 16px;border-radius:10px;font-family:'Syne',sans-serif;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.login-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,119,200,.12);}
+.login-btn{width:100%;background:linear-gradient(135deg,#0077c8,#0099e6);color:#fff;border:none;padding:14px;border-radius:10px;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px;transition:all .2s;box-shadow:0 6px 20px rgba(0,119,200,.35);}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,119,200,.45);}
+.login-error{background:rgba(232,67,147,.1);border:1px solid rgba(232,67,147,.3);border-radius:8px;padding:10px 14px;color:#e84393;font-size:13px;margin-bottom:16px;display:none;text-align:center;}
+.login-hint{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;background:#f0f8ff;border-radius:8px;padding:10px;}
+
+/* APP */
+#app{display:none;}
+#app.visible{display:block;}
+.shell{display:flex;min-height:100vh;}
+aside{width:240px;background:linear-gradient(180deg,#0077c8 0%,#005fa3 100%);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;box-shadow:4px 0 20px rgba(0,50,120,.15);}
+.logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.15);}
+.logo-mark{font-size:22px;font-weight:800;letter-spacing:-.5px;color:#fff;}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.6);font-family:'DM Mono',monospace;margin-top:2px;}
+nav{flex:1;padding:20px 12px;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:rgba(255,255,255,.7);transition:all .2s;margin-bottom:4px;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:rgba(255,255,255,.15);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.22);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.1);}
+.nav-icon{font-size:18px;width:22px;text-align:center;}
+.sidebar-footer{padding:16px 24px;border-top:1px solid rgba(255,255,255,.15);font-size:12px;color:rgba(255,255,255,.6);font-family:'DM Mono',monospace;}
+.logout-btn{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;width:100%;margin-top:10px;transition:all .2s;}
+.logout-btn:hover{background:rgba(255,255,255,.22);color:#fff;}
+main{margin-left:240px;flex:1;display:flex;flex-direction:column;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 36px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.page-title{font-size:20px;font-weight:700;color:var(--text);}
+.header-right{display:flex;align-items:center;gap:16px;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;}
+.badge-green{background:rgba(0,184,148,.12);color:var(--accent2);border:1px solid rgba(0,184,148,.25);}
+.badge-red{background:rgba(232,67,147,.12);color:var(--red);border:1px solid rgba(232,67,147,.2);}
+.badge-blue{background:rgba(0,119,200,.12);color:var(--accent);border:1px solid rgba(0,119,200,.2);}
+.user-badge{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0077c8,#0099e6);color:#fff;padding:6px 14px 6px 10px;border-radius:100px;font-size:13px;font-weight:700;}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.content{padding:32px 36px;flex:1;background:var(--bg);}
+.section{display:none;}
+.section.active{display:block;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;position:relative;overflow:hidden;box-shadow:var(--shadow);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.s1::before{background:linear-gradient(90deg,#0077c8,#0099e6);}
+.stat-card.s2::before{background:linear-gradient(90deg,#00b894,#00cec9);}
+.stat-card.s3::before{background:linear-gradient(90deg,#6c5ce7,#a29bfe);}
+.stat-card.s4::before{background:linear-gradient(90deg,#e84393,#fd79a8);}
+.stat-card.s5::before{background:linear-gradient(90deg,#f39c12,#f1c40f);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;}
+.stat-value{font-size:32px;font-weight:800;margin-top:8px;color:var(--text);}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);}
+.card-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-family:'DM Mono',monospace;padding:10px 12px;text-align:left;border-bottom:2px solid var(--border);background:var(--surface2);}
+td{padding:12px 12px;font-size:14px;border-bottom:1px solid rgba(184,217,239,.4);vertical-align:middle;color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,119,200,.03);}
+.form-group{margin-bottom:18px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;font-family:'DM Mono',monospace;}
+input,select,textarea{width:100%;background:#f0f8ff;border:1.5px solid var(--border);color:var(--text);padding:11px 14px;border-radius:8px;font-family:'Syne',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,119,200,.1);}
+select option{background:white;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .2s;font-family:'Syne',sans-serif;}
+.btn-primary{background:linear-gradient(135deg,#0077c8,#0099e6);color:#fff;box-shadow:0 4px 12px rgba(0,119,200,.3);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,119,200,.4);}
+.btn-ghost{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(232,67,147,.1);color:var(--red);border:1px solid rgba(232,67,147,.3);}
+.btn-ticket{background:linear-gradient(135deg,#f39c12,#f1c40f);color:#fff;box-shadow:0 4px 12px rgba(243,156,18,.3);}
+.btn-ticket:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(243,156,18,.4);}
+.btn-recu{background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;box-shadow:0 4px 12px rgba(0,184,148,.3);}
+.btn-recu:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,184,148,.4);}
+.btn-sm{padding:6px 14px;font-size:12px;}
+.place-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;max-height:480px;overflow-y:auto;}
+.place-slot{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;transition:all .2s;border:2px solid transparent;position:relative;}
+.place-slot.libre{background:rgba(0,184,148,.12);border-color:rgba(0,184,148,.35);color:var(--accent2);}
+.place-slot.libre:hover{background:rgba(0,184,148,.22);transform:scale(1.05);}
+.place-slot.occupe{background:rgba(232,67,147,.1);border-color:rgba(232,67,147,.35);color:var(--red);}
+.place-slot .type-icon{font-size:14px;margin-bottom:1px;}
+.place-pagination{display:flex;align-items:center;gap:8px;margin-top:16px;justify-content:center;flex-wrap:wrap;}
+.page-btn{padding:6px 12px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;transition:all .2s;}
+.page-btn:hover,.page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,50,100,.5);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease;box-shadow:0 30px 80px rgba(0,50,120,.25);color:var(--text);}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:24px;color:var(--text);}
+.tarif-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.tarif-card{border-radius:12px;padding:20px;position:relative;overflow:hidden;}
+.tarif-card.moto{background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(108,92,231,.05));border:1px solid rgba(108,92,231,.25);}
+.tarif-card.voiture{background:linear-gradient(135deg,rgba(0,184,148,.15),rgba(0,184,148,.05));border:1px solid rgba(0,184,148,.25);}
+.tarif-type{font-size:20px;margin-bottom:8px;}
+.tarif-name{font-size:16px;font-weight:800;color:var(--text);}
+.tarif-rows{margin-top:16px;display:flex;flex-direction:column;gap:10px;}
+.tarif-row{display:flex;justify-content:space-between;align-items:center;}
+.tarif-label{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;}
+.tarif-price{font-size:18px;font-weight:800;color:var(--text);}
+.tarif-price span{font-size:12px;font-weight:400;color:var(--muted);}
+#toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 20px;font-size:14px;font-weight:600;transform:translateY(60px);opacity:0;transition:all .3s;z-index:999;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,50,120,.15);color:var(--text);}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-color:rgba(0,184,148,.4);color:var(--accent2);}
+#toast.error{border-color:rgba(232,67,147,.4);color:var(--red);}
+.flex{display:flex;align-items:center;gap:12px;}
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+.mt-16{margin-top:16px;}
+.mt-24{margin-top:24px;}
+.mb-24{margin-bottom:24px;}
+.text-muted{color:var(--muted);font-size:13px;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.dot-green{background:var(--accent2);}
+.dot-red{background:var(--red);}
+.dot-blue{background:var(--accent);}
+.dot-orange{background:var(--ticket);}
+.pill{display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;}
+.pill-green{background:rgba(0,184,148,.12);color:var(--accent2);}
+.pill-red{background:rgba(232,67,147,.12);color:var(--red);}
+.pill-yellow{background:rgba(0,119,200,.12);color:var(--accent);}
+.pill-purple{background:rgba(108,92,231,.12);color:var(--moto);}
+.pill-orange{background:rgba(243,156,18,.15);color:#c67c0a;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.divider{height:1px;background:var(--border);margin:20px 0;}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.empty-state{text-align:center;padding:48px;color:var(--muted);}
+.empty-state .emoji{font-size:40px;margin-bottom:12px;}
+.place-controls{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.place-controls input,.place-controls select{width:auto;padding:8px 12px;font-size:13px;}
+.place-stats-bar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.place-stat-pill{padding:6px 14px;border-radius:100px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;}
+.ps-total{background:rgba(0,119,200,.12);color:var(--accent);}
+.ps-libre{background:rgba(0,184,148,.12);color:var(--accent2);}
+.ps-occupe{background:rgba(232,67,147,.12);color:var(--red);}
+.ticket-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+
+/* ═══ REÇU PROFESSIONNEL ═══ */
+.recu-modal .modal{width:480px;}
+.recu-container{
+  background:#fff;
+  border-radius:0;
+  font-family:'DM Mono',monospace;
+  overflow:hidden;
+  border:1px solid #ddd;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+.recu-header{
+  background:linear-gradient(135deg,#0077c8,#005fa3);
+  padding:24px 28px;
+  color:#fff;
+  position:relative;
+  overflow:hidden;
+}
+.recu-header::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,.08);
+}
+.recu-header::after{
+  content:'';position:absolute;bottom:-40px;right:30px;
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(255,255,255,.05);
+}
+.recu-logo-line{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.recu-logo-icon{
+  width:44px;height:44px;border-radius:10px;
+  background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+.recu-company-name{font-size:20px;font-weight:800;font-family:'Syne',sans-serif;letter-spacing:-.5px;}
+.recu-company-sub{font-size:11px;opacity:.7;margin-top:2px;}
+.recu-type-badge{
+  display:inline-block;margin-top:12px;
+  padding:4px 14px;border-radius:100px;
+  background:rgba(255,255,255,.2);
+  font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+}
+.recu-id-area{margin-top:10px;display:flex;justify-content:space-between;align-items:flex-end;}
+.recu-id{font-size:22px;font-weight:800;letter-spacing:1px;font-family:'Syne',sans-serif;}
+.recu-date-top{font-size:11px;opacity:.7;text-align:right;line-height:1.6;}
+
+.recu-vehicle-band{
+  padding:14px 28px;
+  background:linear-gradient(90deg,rgba(0,119,200,.06),rgba(0,184,148,.06));
+  border-bottom:1px solid #e8f4fd;
+  display:flex;align-items:center;gap:16px;
+}
+.recu-vehicle-icon{
+  width:48px;height:48px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;
+}
+.recu-vehicle-icon.moto{background:rgba(108,92,231,.12);}
+.recu-vehicle-icon.voiture{background:rgba(0,184,148,.12);}
+.recu-vehicle-details{flex:1;}
+.recu-vehicle-plaque{font-size:18px;font-weight:800;color:#1a3a5c;font-family:'Syne',sans-serif;}
+.recu-vehicle-info{font-size:12px;color:#5a85a8;margin-top:3px;}
+.recu-vehicle-type-badge{
+  padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700;
+}
+.recu-vehicle-type-badge.moto{background:rgba(108,92,231,.12);color:#6c5ce7;}
+.recu-vehicle-type-badge.voiture{background:rgba(0,184,148,.12);color:#00b894;}
+
+.recu-body{padding:20px 28px;}
+.recu-section-title{
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:#5a85a8;margin-bottom:12px;
+  padding-bottom:6px;border-bottom:1px solid #e8f4fd;
+}
+.recu-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
+.recu-row{display:flex;justify-content:space-between;align-items:center;}
+.recu-row .rl{font-size:12px;color:#5a85a8;}
+.recu-row .rv{font-size:13px;font-weight:700;color:#1a3a5c;text-align:right;}
+
+.recu-total-box{
+  background:linear-gradient(135deg,#0077c8,#0099e6);
+  border-radius:10px;padding:18px 24px;
+  text-align:center;margin:8px 0 18px;
+  position:relative;overflow:hidden;
+}
+.recu-total-box::before{
+  content:'';position:absolute;top:-20px;right:-20px;
+  width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.08);
+}
+.recu-total-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px;}
+.recu-total-amount{font-size:36px;font-weight:800;color:#fff;font-family:'Syne',sans-serif;letter-spacing:-1px;}
+.recu-total-currency{font-size:14px;font-weight:400;opacity:.8;margin-left:4px;}
+.recu-total-detail{font-size:11px;color:rgba(255,255,255,.65);margin-top:6px;}
+
+.recu-statut-bar{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:700;
+}
+.recu-statut-bar.paye{background:rgba(0,184,148,.1);color:#00b894;border:1px solid rgba(0,184,148,.3);}
+.recu-statut-bar.attente{background:rgba(243,156,18,.1);color:#c67c0a;border:1px solid rgba(243,156,18,.3);}
+.recu-statut-bar.annule{background:rgba(232,67,147,.1);color:#e84393;border:1px solid rgba(232,67,147,.3);}
+
+.recu-barcode-zone{
+  border-top:1px dashed #ddd;padding-top:16px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.recu-barcode-svg{width:100%;max-width:260px;height:45px;}
+.recu-barcode-text{font-size:11px;color:#5a85a8;letter-spacing:2px;}
+
+.recu-footer{
+  background:#f8fbff;border-top:1px solid #e8f4fd;
+  padding:14px 28px;text-align:center;
+  font-size:11px;color:#5a85a8;line-height:1.6;
+}
+.recu-footer strong{color:#1a3a5c;}
+
+/* Ticket de stationnement (style original amélioré) */
+.ticket-preview{background:#fff;border:2px dashed #ccc;border-radius:12px;padding:24px;font-family:'DM Mono',monospace;position:relative;overflow:hidden;}
+.ticket-preview::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,#f39c12,#f1c40f,#e67e22);}
+.ticket-header{text-align:center;margin-bottom:16px;}
+.ticket-logo{font-size:22px;font-weight:800;color:var(--accent);}
+.ticket-id{font-size:11px;color:var(--muted);margin-top:4px;}
+.ticket-divider{border:none;border-top:1px dashed #ccc;margin:12px 0;}
+.ticket-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;}
+.ticket-row .label{color:var(--muted);}
+.ticket-row .value{font-weight:700;color:var(--text);}
+.ticket-total{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);border-radius:8px;padding:14px;text-align:center;margin-top:12px;}
+.ticket-total .amount{font-size:28px;font-weight:800;color:#c67c0a;}
+.ticket-barcode{text-align:center;margin-top:14px;}
+.ticket-statut-imprime{background:rgba(0,184,148,.12);border:1px solid rgba(0,184,148,.3);border-radius:8px;padding:8px 14px;color:var(--accent2);font-size:12px;text-align:center;margin-top:10px;}
+.ticket-statut-en-attente{background:rgba(243,156,18,.12);border:1px solid rgba(243,156,18,.3);border-radius:8px;padding:8px 14px;color:#c67c0a;font-size:12px;text-align:center;margin-top:10px;}
+
+@media print{
+  body *{visibility:hidden;}
+  #print-zone,#print-zone *{visibility:visible;}
+  #print-zone{position:absolute;left:0;top:0;width:100%;padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-bg-circles"><span></span><span></span><span></span><span></span></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">🅿 ParkSmart</div>
+      <div class="login-logo-sub">Système de Gestion de Parking</div>
+    </div>
+    <div class="login-title">Bienvenue !</div>
+    <div class="login-subtitle">Connectez-vous pour accéder au tableau de bord</div>
+    <div class="login-error" id="login-error">Identifiants incorrects. Réessayez.</div>
+    <div class="login-form-group">
+      <label class="login-label">Nom d'utilisateur</label>
+      <input class="login-input" type="text" id="login-user" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="login-form-group">
+      <label class="login-label">Mot de passe</label>
+      <input class="login-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()">🔐 Se Connecter</button>
+    <div class="login-hint">Demo : <strong>admin</strong> / <strong>parksmart</strong><br>Agent : <strong>agent</strong> / <strong>agent123</strong></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="shell">
+  <aside>
+    <div class="logo">
+      <div class="logo-mark">🅿 ParkSmart</div>
+      <div class="logo-sub">v2.1 · Système de Parking</div>
+    </div>
+    <nav>
+      <button class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-icon">📊</span> Tableau de Bord</button>
+      <button class="nav-item" onclick="showSection('places',this)"><span class="nav-icon">🗺️</span> Places</button>
+      <button class="nav-item" onclick="showSection('vehicules',this)"><span class="nav-icon">🚗</span> Véhicules</button>
+      <button class="nav-item" onclick="showSection('stationnement',this)"><span class="nav-icon">🅿️</span> Stationnement</button>
+      <button class="nav-item" onclick="showSection('tickets',this)"><span class="nav-icon">🎫</span> Tickets</button>
+      <button class="nav-item" onclick="showSection('reservations',this)"><span class="nav-icon">📅</span> Réservations</button>
+      <button class="nav-item" onclick="showSection('paiements',this)"><span class="nav-icon">💰</span> Paiements</button>
+      <button class="nav-item" onclick="showSection('abonnements',this)"><span class="nav-icon">♻️</span> Abonnements</button>
+      <button class="nav-item" onclick="showSection('utilisateurs',this)"><span class="nav-icon">👤</span> Utilisateurs</button>
+      <button class="nav-item" onclick="showSection('tarifs',this)"><span class="nav-icon">🏷️</span> Tarifs</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div>Agent: <span style="color:#7effd4">●</span> En ligne</div>
+      <div id="current-time" style="margin-top:4px"></div>
+      <button class="logout-btn" onclick="doLogout()">🚪 Déconnexion</button>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div class="page-title" id="page-title">Tableau de Bord</div>
+      <div class="header-right">
+        <span class="badge badge-green"><span class="dot dot-green"></span><span id="places-libres-badge">—</span> Libres</span>
+        <span class="badge badge-red"><span class="dot dot-red"></span><span id="places-occupees-badge">—</span> Occupées</span>
+        <span class="badge" style="background:rgba(243,156,18,.12);color:#c67c0a;border:1px solid rgba(243,156,18,.25)"><span class="dot dot-orange"></span><span id="tickets-badge">—</span> Tickets</span>
+        <span class="user-badge"><span class="user-avatar">👤</span><span id="header-username">Admin</span></span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="section-dashboard">
+        <div class="stats">
+          <div class="stat-card s1"><div class="stat-label">Revenus du Jour</div><div class="stat-value" id="stat-revenus">0</div><div class="stat-sub">Francs CFA</div></div>
+          <div class="stat-card s2"><div class="stat-label">Places Libres</div><div class="stat-value" id="stat-libres">—</div><div class="stat-sub">sur <span id="stat-total">—</span> places</div></div>
+          <div class="stat-card s3"><div class="stat-label">Véhicules Présents</div><div class="stat-value" id="stat-vehicules">—</div><div class="stat-sub">en stationnement</div></div>
+          <div class="stat-card s5"><div class="stat-label">Tickets Émis</div><div class="stat-value" id="stat-tickets">—</div><div class="stat-sub">aujourd'hui</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Entrées Récentes <span class="text-muted" style="font-size:12px;text-transform:none">Aujourd'hui</span></div>
+            <table><thead><tr><th>Plaque</th><th>Type</th><th>Entrée</th><th>Ticket</th></tr></thead><tbody id="recent-entries"></tbody></table>
+          </div>
+          <div class="card">
+            <div class="card-title">Occupation <span class="text-muted" style="font-size:12px;text-transform:none">Par type</span></div>
+            <div style="padding:8px 0">
+              <div class="flex-between" style="margin-bottom:10px"><span style="font-size:13px">🏍️ Motos</span><span class="pill pill-purple" id="moto-count">—</span></div>
+              <div style="background:var(--bg2);border-radius:6px;height:10px;overflow:hidden;margin-bottom:20px"><div id="moto-bar" style="height:100%;background:linear-gradient(90deg,#6c5ce7,#a29bfe);border-radius:6px;transition:width .5s;width:0%"></div></div>
+              <div class="flex-between" style="margin-bottom:10px"><span style="font-size:13px">🚗 Voitures</span><span class="pill pill-green" id="voiture-count">—</span></div>
+              <div style="background:var(--bg2);border-radius:6px;height:10px;overflow:hidden"><div id="voiture-bar" style="height:100%;background:linear-gradient(90deg,#00b894,#00cec9);border-radius:6px;transition:width .5s;width:0%"></div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="tarif-cards" style="margin-top:4px">
+              <div style="text-align:center;padding:12px;background:var(--bg2);border-radius:8px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace">MOTO/JOUR</div><div style="font-size:20px;font-weight:800;color:var(--moto)">50 <span style="font-size:12px;font-weight:400;color:var(--muted)">F</span></div></div>
+              <div style="text-align:center;padding:12px;background:var(--bg2);border-radius:8px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace">VOITURE/JOUR</div><div style="font-size:20px;font-weight:800;color:var(--accent2)">300 <span style="font-size:12px;font-weight:400;color:var(--muted)">F</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLACES -->
+      <div class="section" id="section-places">
+        <div class="flex-between mb-24">
+          <div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;font-family:'DM Mono',monospace">PLAN DE STATIONNEMENT</div>
+            <div class="flex" style="gap:16px">
+              <span><span class="dot dot-green"></span> <span class="text-muted">Libre</span></span>
+              <span><span class="dot dot-red"></span> <span class="text-muted">Occupé</span></span>
+              <span style="font-size:13px">🏍️ <span class="text-muted">Moto</span></span>
+              <span style="font-size:13px">🚗 <span class="text-muted">Voiture</span></span>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modal-add-place')">+ Ajouter des Places</button>
+        </div>
+        <div class="place-stats-bar" id="place-stats-bar"></div>
+        <div class="place-controls">
+          <input type="text" id="place-search" placeholder="Chercher une place…" oninput="renderPlaces()" style="width:220px">
+          <select id="place-filter-type" onchange="renderPlaces()"><option value="">Tous types</option><option value="moto">🏍️ Motos</option><option value="voiture">🚗 Voitures</option></select>
+          <select id="place-filter-statut" onchange="renderPlaces()"><option value="">Tous statuts</option><option value="libre">✅ Libres</option><option value="occupe">🔴 Occupées</option></select>
+          <span id="place-filtered-count" style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace"></span>
+        </div>
+        <div class="card"><div class="place-grid" id="place-grid"></div><div class="place-pagination" id="place-pagination"></div></div>
+        <div class="card mt-24">
+          <div class="card-title">Liste des Places <span style="font-size:12px;color:var(--muted);font-weight:400;text-transform:none;font-family:'DM Mono',monospace" id="place-list-info"></span></div>
+          <table><thead><tr><th>ID</th><th>Type</th><th>Statut</th><th>Véhicule</th><th>Actions</th></tr></thead><tbody id="places-table"></tbody></table>
+          <div class="place-pagination" id="place-list-pagination" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- VÉHICULES -->
+      <div class="section" id="section-vehicules">
+        <div class="flex-between mb-24">
+          <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">GESTION DES VÉHICULES</div>
+          <button class="btn btn-primary" onclick="openModal('modal-add-vehicule')">+ Enregistrer un Véhicule</button>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>ID</th><th>Marque</th><th>Modèle</th><th>Couleur</th><th>Plaque</th><th>Type</th><th>Propriétaire</th><th>Actions</th></tr></thead><tbody id="vehicules-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- STATIONNEMENT -->
+      <div class="section" id="section-stationnement">
+        <div class="flex-between mb-24">
+          <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">ENTRÉES / SORTIES</div>
+          <button class="btn btn-primary" onclick="openModal('modal-entree')">+ Enregistrer Entrée</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Stationnements Actifs</div>
+          <table><thead><tr><th>ID</th><th>Véhicule</th><th>Place</th><th>Entrée</th><th>Durée</th><th>Montant Est.</th><th>Ticket</th><th>Actions</th></tr></thead><tbody id="stationnement-table"></tbody></table>
+        </div>
+        <div class="card mt-24">
+          <div class="card-title">Historique</div>
+          <table><thead><tr><th>ID</th><th>Véhicule</th><th>Entrée</th><th>Sortie</th><th>Montant</th><th>Ticket</th><th>Reçu</th><th>Statut</th></tr></thead><tbody id="historique-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- TICKETS -->
+      <div class="section" id="section-tickets">
+        <div class="flex-between mb-24">
+          <div><div style="font-size:13px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace">GESTION DES TICKETS</div><div style="font-size:12px;color:var(--muted)">Tickets générés à l'entrée et à la sortie</div></div>
+          <div class="flex" style="gap:10px">
+            <button class="btn btn-ghost btn-sm" onclick="filtrerTickets('tous')">Tous</button>
+            <button class="btn btn-ghost btn-sm" onclick="filtrerTickets('en_attente')">En attente</button>
+            <button class="btn btn-ghost btn-sm" onclick="filtrerTickets('imprime')">Imprimés</button>
+            <button class="btn btn-ghost btn-sm" onclick="filtrerTickets('annule')">Annulés</button>
+          </div>
+        </div>
+        <div class="ticket-stats">
+          <div class="stat-card s5"><div class="stat-label">Total Tickets</div><div class="stat-value" id="tk-total">—</div><div class="stat-sub">émis</div></div>
+          <div class="stat-card s2"><div class="stat-label">Imprimés</div><div class="stat-value" id="tk-imprime">—</div><div class="stat-sub">tickets</div></div>
+          <div class="stat-card s4"><div class="stat-label">En Attente</div><div class="stat-value" id="tk-attente">—</div><div class="stat-sub">tickets</div></div>
+          <div class="stat-card s1"><div class="stat-label">Revenus Tickets</div><div class="stat-value" id="tk-revenus">—</div><div class="stat-sub">Francs CFA</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Liste des Tickets <span style="font-size:12px;color:var(--muted);text-transform:none;font-weight:400;font-family:'DM Mono',monospace" id="ticket-filter-label">Tous les tickets</span></div>
+          <table><thead><tr><th>ID Ticket</th><th>Véhicule</th><th>Émission</th><th>Entrée</th><th>Sortie</th><th>Montant</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tickets-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- RÉSERVATIONS -->
+      <div class="section" id="section-reservations">
+        <div class="flex-between mb-24">
+          <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">GESTION DES RÉSERVATIONS</div>
+          <button class="btn btn-primary" onclick="openModal('modal-add-reservation')">+ Nouvelle Réservation</button>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>ID</th><th>Véhicule</th><th>Date</th><th>Début</th><th>Fin</th><th>Statut</th><th>Reçu</th><th>Actions</th></tr></thead><tbody id="reservations-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- PAIEMENTS -->
+      <div class="section" id="section-paiements">
+        <div class="flex-between mb-24">
+          <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">GESTION DES PAIEMENTS</div>
+          <button class="btn btn-primary" onclick="openModal('modal-add-paiement')">+ Enregistrer Paiement</button>
+        </div>
+        <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card s1"><div class="stat-label">Total du Jour</div><div class="stat-value" id="pay-jour">0 F</div></div>
+          <div class="stat-card s2"><div class="stat-label">Total du Mois</div><div class="stat-value" id="pay-mois">0 F</div></div>
+          <div class="stat-card s3"><div class="stat-label">Nb Transactions</div><div class="stat-value" id="pay-nb">0</div></div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>ID</th><th>Date</th><th>Véhicule</th><th>Type</th><th>Montant</th><th>Reçu de Paiement</th></tr></thead><tbody id="paiements-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ABONNEMENTS -->
+      <div class="section" id="section-abonnements">
+        <div class="flex-between mb-24">
+          <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">ABONNEMENTS MENSUELS</div>
+          <button class="btn btn-primary" onclick="openModal('modal-add-abonnement')">+ Nouvel Abonnement</button>
+        </div>
+        <div class="tarif-cards mb-24">
+          <div class="tarif-card moto">
+            <div class="tarif-type">🏍️</div><div class="tarif-name">Moto</div>
+            <div class="tarif-rows">
+              <div class="tarif-row"><span class="tarif-label">Journalier</span><div class="tarif-price">50 <span>F/jour</span></div></div>
+              <div class="tarif-row"><span class="tarif-label">Mensuel</span><div class="tarif-price">1 500 <span>F/mois</span></div></div>
+            </div>
+          </div>
+          <div class="tarif-card voiture">
+            <div class="tarif-type">🚗</div><div class="tarif-name">Voiture</div>
+            <div class="tarif-rows">
+              <div class="tarif-row"><span class="tarif-label">Journalier</span><div class="tarif-price">300 <span>F/jour</span></div></div>
+              <div class="tarif-row"><span class="tarif-label">Mensuel</span><div class="tarif-price">9 000 <span>F/mois</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>ID</th><th>Utilisateur</th><th>Véhicule</th><th>Début</th><th>Fin</th><th>Type</th><th>Montant</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="abonnements-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- UTILISATEURS -->
+      <div class="section" id="section-utilisateurs">
+        <div class="flex-between mb-24">
+          <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace">GESTION DES UTILISATEURS</div>
+          <button class="btn btn-primary" onclick="openModal('modal-add-utilisateur')">+ Nouvel Utilisateur</button>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Téléphone</th><th>Email</th><th>Type</th><th>Actions</th></tr></thead><tbody id="utilisateurs-table"></tbody></table>
+        </div>
+      </div>
+
+      <!-- TARIFS -->
+      <div class="section" id="section-tarifs">
+        <div style="font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:24px">GRILLE TARIFAIRE OFFICIELLE</div>
+        <div class="tarif-cards">
+          <div class="tarif-card moto" style="padding:32px">
+            <div style="font-size:40px;margin-bottom:12px">🏍️</div>
+            <div style="font-size:22px;font-weight:800;color:var(--moto)">Moto / Scooter</div>
+            <div class="tarif-rows" style="margin-top:24px">
+              <div class="tarif-row" style="background:var(--bg2);padding:16px;border-radius:10px"><div><div class="tarif-label">Tarif Journalier</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Par jour</div></div><div style="font-size:28px;font-weight:800;color:var(--moto)">50 F</div></div>
+              <div class="tarif-row" style="background:var(--bg2);padding:16px;border-radius:10px;margin-top:12px"><div><div class="tarif-label">Abonnement Mensuel</div><div style="font-size:11px;color:var(--muted);margin-top:2px">30 jours</div></div><div style="font-size:28px;font-weight:800;color:var(--moto)">1 500 F</div></div>
+            </div>
+          </div>
+          <div class="tarif-card voiture" style="padding:32px">
+            <div style="font-size:40px;margin-bottom:12px">🚗</div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent2)">Voiture / 4 Roues</div>
+            <div class="tarif-rows" style="margin-top:24px">
+              <div class="tarif-row" style="background:var(--bg2);padding:16px;border-radius:10px"><div><div class="tarif-label">Tarif Journalier</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Par jour</div></div><div style="font-size:28px;font-weight:800;color:var(--accent2)">300 F</div></div>
+              <div class="tarif-row" style="background:var(--bg2);padding:16px;border-radius:10px;margin-top:12px"><div><div class="tarif-label">Abonnement Mensuel</div><div style="font-size:11px;color:var(--muted);margin-top:2px">30 jours</div></div><div style="font-size:28px;font-weight:800;color:var(--accent2)">9 000 F</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card mt-24">
+          <div class="card-title">🧮 Simulateur de Coût</div>
+          <div class="input-row">
+            <div class="form-group"><label>Type de véhicule</label><select id="sim-type" onchange="simuler()"><option value="moto">🏍️ Moto</option><option value="voiture">🚗 Voiture</option></select></div>
+            <div class="form-group"><label>Nombre de jours</label><input type="number" id="sim-jours" value="1" min="1" max="365" oninput="simuler()"></div>
+          </div>
+          <div id="sim-result" style="background:var(--bg2);border-radius:10px;padding:20px;text-align:center"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+</div><!-- /app -->
+
+<!-- MODALS -->
+<!-- Add Place -->
+<div class="modal-overlay" id="modal-add-place">
+  <div class="modal">
+    <div class="modal-title">🗺️ Ajouter des Places</div>
+    <div class="form-group"><label>Type de Place</label><select id="new-place-type"><option value="moto">🏍️ Moto</option><option value="voiture">🚗 Voiture</option></select></div>
+    <div class="form-group"><label>Nombre de places</label><input type="number" id="new-place-nb" value="1" min="1" max="10000" oninput="updatePlacePreview()"></div>
+    <div id="place-preview" style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:8px;font-size:13px;font-family:'DM Mono',monospace;color:var(--muted)"></div>
+    <div class="flex" style="gap:12px;margin-top:24px">
+      <button class="btn btn-primary" onclick="ajouterPlaces()">Créer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-place')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Véhicule -->
+<div class="modal-overlay" id="modal-add-vehicule">
+  <div class="modal">
+    <div class="modal-title">🚗 Enregistrer un Véhicule</div>
+    <div class="input-row">
+      <div class="form-group"><label>Marque</label><input type="text" id="v-marque" placeholder="Toyota, Honda..."></div>
+      <div class="form-group"><label>Modèle</label><input type="text" id="v-modele" placeholder="Corolla, CB500..."></div>
+    </div>
+    <div class="input-row">
+      <div class="form-group"><label>Couleur</label><input type="text" id="v-couleur" placeholder="Noir, Blanc..."></div>
+      <div class="form-group"><label>Plaque</label><input type="text" id="v-plaque" placeholder="AB-123-CD"></div>
+    </div>
+    <div class="form-group"><label>Type</label><select id="v-type"><option value="moto">🏍️ Moto</option><option value="voiture">🚗 Voiture</option></select></div>
+    <div class="form-group"><label>Propriétaire</label><select id="v-proprietaire"></select></div>
+    <div class="flex" style="gap:12px;margin-top:24px">
+      <button class="btn btn-primary" onclick="ajouterVehicule()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-vehicule')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Entrée Stationnement -->
+<div class="modal-overlay" id="modal-entree">
+  <div class="modal">
+    <div class="modal-title">🅿️ Enregistrer une Entrée</div>
+    <div class="form-group"><label>Véhicule</label><select id="st-vehicule" onchange="filtrerPlaces()"></select></div>
+    <div class="form-group"><label>Place</label><select id="st-place"></select></div>
+    <div class="form-group"><label>Heure d'entrée</label><input type="datetime-local" id="st-entree"></div>
+    <div style="background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.25);border-radius:8px;padding:12px;font-size:13px;color:#c67c0a;font-family:'DM Mono',monospace">🎫 Un ticket sera automatiquement généré à l'entrée</div>
+    <div class="flex" style="gap:12px;margin-top:24px">
+      <button class="btn btn-primary" onclick="enregistrerEntree()">Enregistrer + Ticket</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-entree')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sortie Stationnement -->
+<div class="modal-overlay" id="modal-sortie">
+  <div class="modal">
+    <div class="modal-title">🏁 Enregistrer une Sortie</div>
+    <div id="sortie-info" style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:20px"></div>
+    <div class="form-group"><label>Heure de Sortie</label><input type="datetime-local" id="st-sortie"></div>
+    <div id="montant-calcule" style="background:rgba(0,119,200,.08);border:1px solid rgba(0,119,200,.2);border-radius:10px;padding:16px;text-align:center;margin-bottom:20px;display:none">
+      <div style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace">MONTANT À PAYER</div>
+      <div id="montant-val" style="font-size:32px;font-weight:800;color:var(--accent);margin-top:4px"></div>
+    </div>
+    <div style="background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.25);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#c67c0a;font-family:'DM Mono',monospace">🎫 Le ticket sera mis à jour avec le montant final</div>
+    <div class="flex" style="gap:12px">
+      <button class="btn btn-ghost" onclick="calculerSortie()">Calculer</button>
+      <button class="btn btn-primary" onclick="enregistrerSortie()">Confirmer Sortie</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-sortie')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ticket Modal -->
+<div class="modal-overlay" id="modal-print-ticket">
+  <div class="modal" style="width:440px">
+    <div class="modal-title">🎫 Ticket de Stationnement</div>
+    <div id="print-zone"><div class="ticket-preview" id="ticket-preview-content"></div></div>
+    <div class="flex" style="gap:12px;margin-top:24px">
+      <button class="btn btn-ticket" onclick="imprimerTicket()">🖨️ Imprimer</button>
+      <button class="btn btn-ghost" onclick="marquerImprime()">✅ Marquer Imprimé</button>
+      <button class="btn btn-danger btn-sm" onclick="annulerTicket()">Annuler Ticket</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-print-ticket')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- REÇU PROFESSIONNEL MODAL -->
+<div class="modal-overlay recu-modal" id="modal-recu">
+  <div class="modal" style="width:480px;padding:0;overflow:hidden;background:transparent;border:none;box-shadow:none;">
+    <div id="print-zone-recu">
+      <div class="recu-container" id="recu-content"></div>
+    </div>
+    <div class="flex" style="gap:12px;margin-top:16px;padding:0 4px">
+      <button class="btn btn-recu" onclick="imprimerRecu()">🖨️ Imprimer le Reçu</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-recu')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Réservation -->
+<div class="modal-overlay" id="modal-add-reservation">
+  <div class="modal">
+    <div class="modal-title">📅 Nouvelle Réservation</div>
+    <div class="form-group"><label>Véhicule</label><select id="r-vehicule"></select></div>
+    <div class="form-group"><label>Date</label><input type="date" id="r-date"></div>
+    <div class="input-row">
+      <div class="form-group"><label>Heure de Début</label><input type="time" id="r-debut"></div>
+      <div class="form-group"><label>Heure de Fin</label><input type="time" id="r-fin"></div>
+    </div>
+    <div class="flex" style="gap:12px;margin-top:24px">
+      <button class="btn btn-primary" onclick="ajouterReservation()">Réserver</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-reservation')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Paiement -->
+<div class="modal-overlay" id="modal-add-paiement">
+  <div class="modal">
+    <div class="modal-title">💰 Enregistrer un Paiement</div>
+    <div class="form-group"><label>Véhicule</label><select id="p-vehicule"></select></div>
+    <div class="form-group"><label>Type</label><select id="p-type" onchange="calculerPaiement()"><option value="journalier">Journalier</option><option value="mensuel">Mensuel</option></select></div>
+    <div class="form-group"><label>Date</label><input type="date" id="p-date"></div>
+    <div id="p-montant-info" style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:14px;color:var(--text)"></div>
+    <div class="flex" style="gap:12px;margin-top:16px">
+      <button class="btn btn-primary" onclick="ajouterPaiement()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-paiement')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Abonnement -->
+<div class="modal-overlay" id="modal-add-abonnement">
+  <div class="modal">
+    <div class="modal-title">♻️ Nouvel Abonnement</div>
+    <div class="form-group"><label>Utilisateur</label><select id="ab-utilisateur"></select></div>
+    <div class="form-group"><label>Véhicule</label><select id="ab-vehicule" onchange="updateAboPrix()"></select></div>
+    <div class="form-group"><label>Date de Début</label><input type="date" id="ab-debut" onchange="updateAboPrix()"></div>
+    <div id="ab-info" style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:13px;color:var(--text)"></div>
+    <div class="flex" style="gap:12px">
+      <button class="btn btn-primary" onclick="ajouterAbonnement()">Activer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-abonnement')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Utilisateur -->
+<div class="modal-overlay" id="modal-add-utilisateur">
+  <div class="modal">
+    <div class="modal-title">👤 Nouvel Utilisateur</div>
+    <div class="input-row">
+      <div class="form-group"><label>Nom</label><input type="text" id="u-nom" placeholder="DIALLO"></div>
+      <div class="form-group"><label>Prénom</label><input type="text" id="u-prenom" placeholder="Mamadou"></div>
+    </div>
+    <div class="input-row">
+      <div class="form-group"><label>Téléphone</label><input type="text" id="u-tel" placeholder="+223 XX XX XX XX"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="u-email" placeholder="email@exemple.com"></div>
+    </div>
+    <div class="form-group"><label>Type</label><select id="u-type"><option value="client">Client</option><option value="agent">Agent Parking</option><option value="admin">Administrateur</option></select></div>
+    <div class="flex" style="gap:12px;margin-top:24px">
+      <button class="btn btn-primary" onclick="ajouterUtilisateur()">Créer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-utilisateur')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══ AUTH ══
+const COMPTES=[
+  {username:'admin',password:'parksmart',role:'admin',nom:'Admin Principal'},
+  {username:'agent',password:'agent123',role:'agent',nom:'Agent Parking'},
+];
+let currentUser=null;
+function doLogin(){
+  const user=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value.trim();
+  const compte=COMPTES.find(c=>c.username===user&&c.password===pass);
+  if(compte){
+    currentUser=compte;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('header-username').textContent=compte.nom;
+    renderDashboard();
+    toast('Bienvenue, '+compte.nom+' !');
+  } else {
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('login-pass').value='';
+    setTimeout(()=>document.getElementById('login-error').style.display='none',3000);
+  }
+}
+function doLogout(){
+  currentUser=null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!document.getElementById('login-screen').classList.contains('hidden'))doLogin();
+});
+
+// ══ DATA ══
+const DB={
+  utilisateurs:[
+    {id:1,nom:'COULIBALY',prenom:'Ibrahim',telephone:'+223 76 12 34 56',email:'ibrahim@mail.com',type:'admin'},
+    {id:2,nom:'TRAORÉ',prenom:'Fatoumata',telephone:'+223 66 98 76 54',email:'fatoumata@mail.com',type:'client'},
+    {id:3,nom:'DIALLO',prenom:'Mamadou',telephone:'+223 75 55 44 33',email:'mamadou@mail.com',type:'client'},
+  ],
+  vehicules:[
+    {id:1,marque:'Honda',modele:'CB500',couleur:'Rouge',plaque:'ML-001-BA',type:'moto',proprietaire:2},
+    {id:2,marque:'Toyota',modele:'Corolla',couleur:'Blanc',plaque:'ML-245-BA',type:'voiture',proprietaire:2},
+    {id:3,marque:'Yamaha',modele:'FZ150',couleur:'Noir',plaque:'ML-789-BA',type:'moto',proprietaire:3},
+  ],
+  places:[
+    {id:'P001',type:'voiture',statut:'occupe',vehicule:2},
+    {id:'P002',type:'voiture',statut:'libre',vehicule:null},
+    {id:'P003',type:'voiture',statut:'libre',vehicule:null},
+    {id:'P004',type:'voiture',statut:'libre',vehicule:null},
+    {id:'M001',type:'moto',statut:'occupe',vehicule:1},
+    {id:'M002',type:'moto',statut:'libre',vehicule:null},
+    {id:'M003',type:'moto',statut:'libre',vehicule:null},
+    {id:'M004',type:'moto',statut:'occupe',vehicule:3},
+  ],
+  stationnements:[
+    {id:1,vehicule:2,place:'P001',entree:new Date(Date.now()-7200000).toISOString(),sortie:null,montant:null,statut:'actif',ticketId:'TK-2024-0001'},
+    {id:2,vehicule:1,place:'M001',entree:new Date(Date.now()-3600000).toISOString(),sortie:null,montant:null,statut:'actif',ticketId:'TK-2024-0002'},
+    {id:3,vehicule:3,place:'M004',entree:new Date(Date.now()-1800000).toISOString(),sortie:null,montant:null,statut:'actif',ticketId:'TK-2024-0003'},
+  ],
+  stationnements_hist:[
+    {id:10,vehicule:2,entree:'2026-04-30T08:00',sortie:'2026-04-30T18:00',montant:300,statut:'termine',ticketId:'TK-2024-0010'},
+    {id:11,vehicule:1,entree:'2026-04-30T09:00',sortie:'2026-04-30T17:00',montant:50,statut:'termine',ticketId:'TK-2024-0011'},
+  ],
+  tickets:[
+    {id:'TK-2024-0001',vehiculeId:2,dateEmission:new Date(Date.now()-7200000).toISOString(),heureEntree:new Date(Date.now()-7200000).toISOString(),heureSortie:null,montantTotal:null,statut:'en_attente',stationnementId:1},
+    {id:'TK-2024-0002',vehiculeId:1,dateEmission:new Date(Date.now()-3600000).toISOString(),heureEntree:new Date(Date.now()-3600000).toISOString(),heureSortie:null,montantTotal:null,statut:'en_attente',stationnementId:2},
+    {id:'TK-2024-0003',vehiculeId:3,dateEmission:new Date(Date.now()-1800000).toISOString(),heureEntree:new Date(Date.now()-1800000).toISOString(),heureSortie:null,montantTotal:null,statut:'en_attente',stationnementId:3},
+    {id:'TK-2024-0010',vehiculeId:2,dateEmission:'2026-04-30T08:00:00',heureEntree:'2026-04-30T08:00:00',heureSortie:'2026-04-30T18:00:00',montantTotal:300,statut:'imprime',stationnementId:10},
+    {id:'TK-2024-0011',vehiculeId:1,dateEmission:'2026-04-30T09:00:00',heureEntree:'2026-04-30T09:00:00',heureSortie:'2026-04-30T17:00:00',montantTotal:50,statut:'imprime',stationnementId:11},
+  ],
+  reservations:[
+    {id:1,vehicule:2,date:'2026-05-02',debut:'09:00',fin:'17:00',statut:'confirmé'},
+  ],
+  paiements:[
+    {id:1,vehicule:1,type:'journalier',date:'2026-04-30',montant:50},
+    {id:2,vehicule:2,type:'journalier',date:'2026-04-30',montant:300},
+  ],
+  abonnements:[],
+  nextIds:{utilisateur:4,vehicule:4,stationnement:4,reservation:2,paiement:3,abonnement:1,ticket:12},
+  nextPlaceNums:{moto:5,voiture:5}
+};
+const TARIFS={moto:{journalier:50,mensuel:1500},voiture:{journalier:300,mensuel:9000}};
+const MAX_PLACES=10000;
+let sortieEnCours=null,ticketEnCours=null,ticketFiltreActuel='tous';
+let placePage=0,placeListPage=0;
+const PLACES_PER_GRID_PAGE=200,PLACES_PER_LIST_PAGE=50;
+
+// ══ HELPERS ══
+function getVehicule(id){return DB.vehicules.find(v=>v.id===id);}
+function getUtilisateur(id){return DB.utilisateurs.find(u=>u.id===id);}
+function getPlace(id){return DB.places.find(p=>p.id===id);}
+function getTicket(id){return DB.tickets.find(t=>t.id===id);}
+function nomVehicule(id){const v=getVehicule(id);return v?`${v.plaque} (${v.marque})`:'—';}
+function nomUtilisateur(id){const u=getUtilisateur(id);return u?`${u.nom} ${u.prenom}`:'—';}
+function formatDate(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function formatDateOnly(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function diffHeures(d1,d2){return Math.abs(new Date(d2)-new Date(d1))/36e5;}
+function calcMontant(type,entree,sortie){const h=diffHeures(entree,sortie);const jours=Math.ceil(h/24)||1;return jours*TARIFS[type].journalier;}
+function genTicketId(){const num=String(DB.nextIds.ticket++).padStart(4,'0');return`TK-2024-${num}`;}
+function genRecuId(type){const num=Math.floor(Math.random()*90000)+10000;return`RC-${type.toUpperCase().slice(0,3)}-${num}`;}
+function nowStr(){return new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=(type==='success'?'✅ ':'❌ ')+msg;
+  t.className='show '+type;
+  setTimeout(()=>t.className='',3000);
+}
+
+// ══ NAVIGATION ══
+const pageTitles={dashboard:'Tableau de Bord',places:'Gestion des Places',vehicules:'Véhicules',stationnement:'Stationnement',tickets:'Tickets de Stationnement',reservations:'Réservations',paiements:'Paiements',abonnements:'Abonnements',utilisateurs:'Utilisateurs',tarifs:'Tarifs'};
+function showSection(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.getElementById('page-title').textContent=pageTitles[id];
+  renderSection(id);
+}
+function renderSection(id){
+  switch(id){
+    case'dashboard':renderDashboard();break;
+    case'places':placePage=0;placeListPage=0;renderPlaces();break;
+    case'vehicules':renderVehicules();break;
+    case'stationnement':renderStationnement();break;
+    case'tickets':renderTickets();break;
+    case'reservations':renderReservations();break;
+    case'paiements':renderPaiements();break;
+    case'abonnements':renderAbonnements();break;
+    case'utilisateurs':renderUtilisateurs();break;
+    case'tarifs':simuler();break;
+  }
+}
+
+// ══ DASHBOARD ══
+function renderDashboard(){
+  const libres=DB.places.filter(p=>p.statut==='libre').length;
+  const occupees=DB.places.filter(p=>p.statut==='occupe').length;
+  const total=DB.places.length;
+  const actifs=DB.stationnements.filter(s=>s.statut==='actif').length;
+  const today=new Date().toISOString().slice(0,10);
+  const ticketsJour=DB.tickets.filter(t=>t.dateEmission.startsWith(today)).length;
+  const revJour=DB.paiements.filter(p=>p.date===today).reduce((a,b)=>a+b.montant,0);
+  document.getElementById('stat-revenus').textContent=revJour.toLocaleString('fr-FR')+' F';
+  document.getElementById('stat-libres').textContent=libres.toLocaleString('fr-FR');
+  document.getElementById('stat-total').textContent=total.toLocaleString('fr-FR');
+  document.getElementById('stat-vehicules').textContent=actifs;
+  document.getElementById('stat-tickets').textContent=ticketsJour;
+  document.getElementById('places-libres-badge').textContent=libres.toLocaleString('fr-FR');
+  document.getElementById('places-occupees-badge').textContent=occupees.toLocaleString('fr-FR');
+  document.getElementById('tickets-badge').textContent=DB.tickets.filter(t=>t.statut==='en_attente').length;
+  const motos=DB.stationnements.filter(s=>s.statut==='actif'&&getVehicule(s.vehicule)?.type==='moto').length;
+  const voitures=DB.stationnements.filter(s=>s.statut==='actif'&&getVehicule(s.vehicule)?.type==='voiture').length;
+  const motoPlaces=DB.places.filter(p=>p.type==='moto').length;
+  const voiturePlaces=DB.places.filter(p=>p.type==='voiture').length;
+  document.getElementById('moto-count').textContent=motos+' / '+motoPlaces;
+  document.getElementById('voiture-count').textContent=voitures+' / '+voiturePlaces;
+  document.getElementById('moto-bar').style.width=(motoPlaces?Math.round(motos/motoPlaces*100):0)+'%';
+  document.getElementById('voiture-bar').style.width=(voiturePlaces?Math.round(voitures/voiturePlaces*100):0)+'%';
+  const actifsSorted=[...DB.stationnements].filter(s=>s.statut==='actif').sort((a,b)=>new Date(b.entree)-new Date(a.entree)).slice(0,5);
+  document.getElementById('recent-entries').innerHTML=actifsSorted.length
+    ?actifsSorted.map(s=>{
+        const v=getVehicule(s.vehicule);
+        return`<tr>
+          <td><span style="font-family:'DM Mono',monospace;font-size:12px">${v?.plaque||'—'}</span></td>
+          <td>${v?.type==='moto'?'🏍️':'🚗'} ${v?.type||'—'}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(s.entree)}</td>
+          <td><button class="btn btn-ticket btn-sm" onclick="voirTicket('${s.ticketId}')">🎫 ${s.ticketId}</button></td>
+        </tr>`;
+      }).join('')
+    :'<tr><td colspan="4" class="empty-state">Aucun stationnement actif</td></tr>';
+}
+
+// ══ PLACES ══
+function getFilteredPlaces(){
+  const search=(document.getElementById('place-search')?.value||'').toLowerCase();
+  const filterType=document.getElementById('place-filter-type')?.value||'';
+  const filterStatut=document.getElementById('place-filter-statut')?.value||'';
+  return DB.places.filter(p=>{
+    if(search&&!p.id.toLowerCase().includes(search))return false;
+    if(filterType&&p.type!==filterType)return false;
+    if(filterStatut&&p.statut!==filterStatut)return false;
+    return true;
+  });
+}
+function renderPlaces(){
+  const total=DB.places.length;
+  const libres=DB.places.filter(p=>p.statut==='libre').length;
+  const occupees=DB.places.filter(p=>p.statut==='occupe').length;
+  const bar=document.getElementById('place-stats-bar');
+  if(bar)bar.innerHTML=`
+    <span class="place-stat-pill ps-total">Total: ${total.toLocaleString('fr-FR')}</span>
+    <span class="place-stat-pill ps-libre">Libres: ${libres.toLocaleString('fr-FR')}</span>
+    <span class="place-stat-pill ps-occupe">Occupées: ${occupees.toLocaleString('fr-FR')}</span>
+    <span class="place-stat-pill" style="background:rgba(108,92,231,.12);color:var(--moto)">🏍️ Motos: ${DB.places.filter(p=>p.type==='moto').length}</span>
+    <span class="place-stat-pill" style="background:rgba(0,184,148,.12);color:var(--accent2)">🚗 Voitures: ${DB.places.filter(p=>p.type==='voiture').length}</span>`;
+  const filtered=getFilteredPlaces();
+  const countEl=document.getElementById('place-filtered-count');
+  if(countEl)countEl.textContent=filtered.length!==total?`${filtered.length} résultat(s)`:'';
+  const totalGridPages=Math.ceil(filtered.length/PLACES_PER_GRID_PAGE);
+  if(placePage>=totalGridPages)placePage=Math.max(0,totalGridPages-1);
+  const gridPlaces=filtered.slice(placePage*PLACES_PER_GRID_PAGE,(placePage+1)*PLACES_PER_GRID_PAGE);
+  const grid=document.getElementById('place-grid');
+  if(grid)grid.innerHTML=gridPlaces.length
+    ?gridPlaces.map(p=>`<div class="place-slot ${p.statut}" title="${p.id} - ${p.type} - ${p.statut}"><div class="type-icon">${p.type==='moto'?'🏍️':'🚗'}</div><div>${p.id}</div></div>`).join('')
+    :'<div style="padding:20px;color:var(--muted);font-size:13px">Aucune place trouvée</div>';
+  const pag=document.getElementById('place-pagination');
+  if(pag)pag.innerHTML=renderPaginationBtns(placePage,totalGridPages,'placePage');
+  const totalListPages=Math.ceil(filtered.length/PLACES_PER_LIST_PAGE);
+  if(placeListPage>=totalListPages)placeListPage=Math.max(0,totalListPages-1);
+  const listPlaces=filtered.slice(placeListPage*PLACES_PER_LIST_PAGE,(placeListPage+1)*PLACES_PER_LIST_PAGE);
+  const listInfo=document.getElementById('place-list-info');
+  if(listInfo)listInfo.textContent=filtered.length>0?`${placeListPage*PLACES_PER_LIST_PAGE+1}–${Math.min((placeListPage+1)*PLACES_PER_LIST_PAGE,filtered.length)} / ${filtered.length.toLocaleString('fr-FR')}`:'';
+  const tbody=document.getElementById('places-table');
+  if(tbody)tbody.innerHTML=listPlaces.length
+    ?listPlaces.map(p=>`<tr>
+        <td><span style="font-family:'DM Mono',monospace">${p.id}</span></td>
+        <td>${p.type==='moto'?'🏍️ Moto':'🚗 Voiture'}</td>
+        <td><span class="pill ${p.statut==='libre'?'pill-green':'pill-red'}">${p.statut}</span></td>
+        <td>${p.vehicule?nomVehicule(p.vehicule):'<span style="color:var(--muted)">—</span>'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="supprimerPlace('${p.id}')">Supprimer</button></td>
+      </tr>`).join('')
+    :'<tr><td colspan="5" class="empty-state">Aucune place</td></tr>';
+  const listPag=document.getElementById('place-list-pagination');
+  if(listPag)listPag.innerHTML=renderPaginationBtns(placeListPage,totalListPages,'placeListPage');
+  document.getElementById('places-libres-badge').textContent=libres.toLocaleString('fr-FR');
+  document.getElementById('places-occupees-badge').textContent=occupees.toLocaleString('fr-FR');
+}
+function renderPaginationBtns(current,total,varName){
+  if(total<=1)return'';
+  let html='';
+  const MAX_BTNS=7;let pages=[];
+  if(total<=MAX_BTNS){pages=Array.from({length:total},(_,i)=>i);}
+  else{pages=[0];let start=Math.max(1,current-2),end=Math.min(total-2,current+2);if(start>1)pages.push('...');for(let i=start;i<=end;i++)pages.push(i);if(end<total-2)pages.push('...');pages.push(total-1);}
+  if(current>0)html+=`<button class="page-btn" onclick="${varName}--;renderPlaces()">‹</button>`;
+  pages.forEach(p=>{if(p==='...')html+=`<span style="padding:0 4px;color:var(--muted)">…</span>`;else html+=`<button class="page-btn ${p===current?'active':''}" onclick="${varName}=${p};renderPlaces()">${p+1}</button>`;});
+  if(current<total-1)html+=`<button class="page-btn" onclick="${varName}++;renderPlaces()">›</button>`;
+  return html;
+}
+function supprimerPlace(id){
+  const p=getPlace(id);
+  if(p.statut==='occupe'){toast('Place occupée, impossible de supprimer','error');return;}
+  DB.places=DB.places.filter(pl=>pl.id!==id);
+  renderPlaces();toast('Place supprimée');
+}
+
+// ══ VÉHICULES ══
+function renderVehicules(){
+  document.getElementById('vehicules-table').innerHTML=DB.vehicules.length
+    ?DB.vehicules.map(v=>`<tr>
+        <td><span style="font-family:'DM Mono',monospace">#${v.id}</span></td>
+        <td>${v.marque}</td><td>${v.modele}</td><td>${v.couleur}</td>
+        <td><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent)">${v.plaque}</span></td>
+        <td>${v.type==='moto'?'🏍️ Moto':'🚗 Voiture'}</td>
+        <td>${nomUtilisateur(v.proprietaire)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="supprimerVehicule(${v.id})">Supprimer</button></td>
+      </tr>`).join('')
+    :'<tr><td colspan="8"><div class="empty-state"><div class="emoji">🚗</div>Aucun véhicule</div></td></tr>';
+}
+function supprimerVehicule(id){
+  if(DB.stationnements.find(s=>s.vehicule===id&&s.statut==='actif')){toast('Véhicule en stationnement actif','error');return;}
+  DB.vehicules=DB.vehicules.filter(v=>v.id!==id);
+  renderVehicules();toast('Véhicule supprimé');
+}
+
+// ══ STATIONNEMENT ══
+function renderStationnement(){
+  const actifs=DB.stationnements.filter(s=>s.statut==='actif');
+  document.getElementById('stationnement-table').innerHTML=actifs.length
+    ?actifs.map(s=>{
+        const v=getVehicule(s.vehicule);
+        const h=diffHeures(s.entree,new Date());
+        const j=Math.ceil(h/24)||1;
+        const mont=v?j*TARIFS[v.type].journalier:'—';
+        const duree=h<1?`${Math.round(h*60)} min`:`${h.toFixed(1)} h`;
+        return`<tr>
+          <td><span style="font-family:'DM Mono',monospace">#${s.id}</span></td>
+          <td>${v?v.plaque+' ('+v.marque+')':'—'}</td>
+          <td><span class="pill pill-yellow">${s.place}</span></td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(s.entree)}</td>
+          <td>${duree}</td>
+          <td><span style="color:var(--accent);font-weight:700">${mont} F</span></td>
+          <td>${s.ticketId?`<button class="btn btn-ticket btn-sm" onclick="voirTicket('${s.ticketId}')">🎫 Voir</button>`:'<span style="color:var(--muted)">—</span>'}</td>
+          <td><button class="btn btn-primary btn-sm" onclick="ouvrirSortie(${s.id})">Sortie →</button></td>
+        </tr>`;
+      }).join('')
+    :'<tr><td colspan="8"><div class="empty-state"><div class="emoji">🅿️</div>Aucun véhicule actuellement</div></td></tr>';
+  document.getElementById('historique-table').innerHTML=DB.stationnements_hist.map(s=>{
+    const v=getVehicule(s.vehicule);
+    return`<tr>
+      <td>#${s.id}</td>
+      <td>${v?v.plaque:'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(s.entree)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(s.sortie)}</td>
+      <td><span style="font-weight:700">${s.montant} F</span></td>
+      <td>${s.ticketId?`<button class="btn btn-ticket btn-sm" onclick="voirTicket('${s.ticketId}')">🎫 ${s.ticketId}</button>`:'—'}</td>
+      <td><button class="btn btn-recu btn-sm" onclick="afficherRecuStationnement(${s.id})">🧾 Reçu</button></td>
+      <td><span class="pill pill-green">Terminé</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══ TICKETS ══
+function renderTickets(filtre){
+  if(filtre)ticketFiltreActuel=filtre;
+  const tk_total=DB.tickets.length;
+  const tk_imprime=DB.tickets.filter(t=>t.statut==='imprime').length;
+  const tk_attente=DB.tickets.filter(t=>t.statut==='en_attente').length;
+  const tk_revenus=DB.tickets.filter(t=>t.montantTotal).reduce((a,b)=>a+(b.montantTotal||0),0);
+  document.getElementById('tk-total').textContent=tk_total;
+  document.getElementById('tk-imprime').textContent=tk_imprime;
+  document.getElementById('tk-attente').textContent=tk_attente;
+  document.getElementById('tk-revenus').textContent=tk_revenus.toLocaleString('fr-FR')+' F';
+  document.getElementById('tickets-badge').textContent=tk_attente;
+  let filtered=DB.tickets;
+  const labels={tous:'Tous les tickets',en_attente:'En attente',imprime:'Imprimés',annule:'Annulés'};
+  document.getElementById('ticket-filter-label').textContent=labels[ticketFiltreActuel]||'Tous';
+  if(ticketFiltreActuel!=='tous')filtered=DB.tickets.filter(t=>t.statut===ticketFiltreActuel);
+  document.getElementById('tickets-table').innerHTML=filtered.length
+    ?filtered.slice().reverse().map(t=>{
+        const v=getVehicule(t.vehiculeId);
+        const statutClass=t.statut==='imprime'?'pill-green':t.statut==='annule'?'pill-red':'pill-orange';
+        const statutLabel=t.statut==='imprime'?'✅ Imprimé':t.statut==='annule'?'❌ Annulé':'⏳ En attente';
+        return`<tr>
+          <td><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#c67c0a">${t.id}</span></td>
+          <td>${v?`<span style="font-family:'DM Mono',monospace;font-size:12px">${v.plaque}</span><br><span style="font-size:11px;color:var(--muted)">${v.marque} ${v.type==='moto'?'🏍️':'🚗'}</span>`:'—'}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(t.dateEmission)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(t.heureEntree)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${t.heureSortie?formatDate(t.heureSortie):'<span style="color:var(--muted)">En cours</span>'}</td>
+          <td>${t.montantTotal?`<span style="font-weight:700;color:var(--accent)">${t.montantTotal.toLocaleString('fr-FR')} F</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+          <td><span class="pill ${statutClass}">${statutLabel}</span></td>
+          <td>
+            <button class="btn btn-ticket btn-sm" onclick="voirTicket('${t.id}')">🎫 Voir</button>
+            ${t.statut==='en_attente'?`<button class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="marquerImprimeId('${t.id}')">✅</button>`:''}
+          </td>
+        </tr>`;
+      }).join('')
+    :`<tr><td colspan="8"><div class="empty-state"><div class="emoji">🎫</div>Aucun ticket</div></td></tr>`;
+}
+function filtrerTickets(f){ticketFiltreActuel=f;renderTickets();}
+
+// ── Ticket viewer ──
+function voirTicket(ticketId){
+  const tk=getTicket(ticketId);
+  if(!tk){toast('Ticket introuvable','error');return;}
+  ticketEnCours=tk;
+  const v=getVehicule(tk.vehiculeId);
+  const type=v?.type||'voiture';
+  const duree=tk.heureSortie?(()=>{const h=diffHeures(tk.heureEntree,tk.heureSortie);return h<1?`${Math.round(h*60)} min`:`${h.toFixed(1)} h`;})():'En cours…';
+  const statutHtml=tk.statut==='imprime'
+    ?`<div class="ticket-statut-imprime">✅ Ticket imprimé</div>`
+    :tk.statut==='annule'
+      ?`<div class="ticket-statut-en-attente" style="background:rgba(232,67,147,.1);border-color:rgba(232,67,147,.3);color:var(--red)">❌ Ticket annulé</div>`
+      :`<div class="ticket-statut-en-attente">⏳ En attente d'impression</div>`;
+  const barcodeLines=Array.from({length:40},(_,i)=>`<rect x="${i*4+10}" y="0" width="${Math.random()>.4?2:1}" height="40" fill="#1a3a5c" opacity="${.6+Math.random()*.4}"/>`).join('');
+  document.getElementById('ticket-preview-content').innerHTML=`
+    <div class="ticket-header">
+      <div class="ticket-logo">🅿 ParkSmart</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px">Ticket de Stationnement</div>
+      <div class="ticket-id">${tk.id}</div>
+    </div>
+    <hr class="ticket-divider">
+    <div class="ticket-row"><span class="label">Véhicule</span><span class="value">${v?.plaque||'—'}</span></div>
+    <div class="ticket-row"><span class="label">Type</span><span class="value">${type==='moto'?'🏍️ Moto':'🚗 Voiture'}</span></div>
+    <div class="ticket-row"><span class="label">Marque</span><span class="value">${v?v.marque+' '+v.modele:'—'}</span></div>
+    <hr class="ticket-divider">
+    <div class="ticket-row"><span class="label">Entrée</span><span class="value">${formatDate(tk.heureEntree)}</span></div>
+    <div class="ticket-row"><span class="label">Sortie</span><span class="value">${tk.heureSortie?formatDate(tk.heureSortie):'—'}</span></div>
+    <div class="ticket-row"><span class="label">Durée</span><span class="value">${duree}</span></div>
+    <hr class="ticket-divider">
+    <div class="ticket-row"><span class="label">Tarif/jour</span><span class="value">${TARIFS[type].journalier} F</span></div>
+    <div class="ticket-total">
+      <div style="font-size:11px;color:var(--muted)">MONTANT TOTAL</div>
+      <div class="amount">${tk.montantTotal?tk.montantTotal.toLocaleString('fr-FR')+' F':'—'}</div>
+    </div>
+    ${statutHtml}
+    <div class="ticket-barcode">
+      <svg viewBox="0 0 180 40" xmlns="http://www.w3.org/2000/svg">${barcodeLines}</svg>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${tk.id} · ParkSmart v2.1</div>
+    </div>`;
+  openModal('modal-print-ticket');
+}
+function imprimerTicket(){if(!ticketEnCours)return;window.print();if(ticketEnCours.statut==='en_attente')ticketEnCours.statut='imprime';toast('Impression lancée !');}
+function marquerImprime(){if(!ticketEnCours)return;ticketEnCours.statut='imprime';closeModal('modal-print-ticket');renderTickets();toast('Ticket marqué comme imprimé');}
+function marquerImprimeId(id){const tk=getTicket(id);if(tk){tk.statut='imprime';renderTickets();toast('Ticket marqué imprimé');}}
+function annulerTicket(){if(!ticketEnCours)return;if(ticketEnCours.statut==='en_attente'){ticketEnCours.statut='annule';closeModal('modal-print-ticket');renderTickets();toast('Ticket annulé');}else toast('Seuls les tickets en attente peuvent être annulés','error');}
+function genererTicketEntree(vehiculeId,heureEntree,stationnementId){
+  const id=genTicketId();
+  const ticket={id,vehiculeId,dateEmission:new Date().toISOString(),heureEntree,heureSortie:null,montantTotal:null,statut:'en_attente',stationnementId};
+  DB.tickets.push(ticket);return id;
+}
+
+// ══ ENTRÉE ══
+function enregistrerEntree(){
+  const vid=parseInt(document.getElementById('st-vehicule').value);
+  const place=document.getElementById('st-place').value;
+  const entree=document.getElementById('st-entree').value;
+  if(!vid||!place||!entree){toast('Tous les champs requis','error');return;}
+  const p=getPlace(place);
+  if(p.statut==='occupe'){toast('Place déjà occupée','error');return;}
+  const stId=DB.nextIds.stationnement++;
+  const ticketId=genererTicketEntree(vid,entree,stId);
+  DB.stationnements.push({id:stId,vehicule:vid,place,entree,sortie:null,montant:null,statut:'actif',ticketId});
+  p.statut='occupe';p.vehicule=vid;
+  closeModal('modal-entree');
+  renderStationnement();
+  document.getElementById('tickets-badge').textContent=DB.tickets.filter(t=>t.statut==='en_attente').length;
+  toast('Entrée enregistrée ! Ticket '+ticketId+' généré 🎫');
+}
+
+// ══ SORTIE ══
+function ouvrirSortie(id){
+  sortieEnCours=DB.stationnements.find(s=>s.id===id);
+  const v=getVehicule(sortieEnCours.vehicule);
+  document.getElementById('sortie-info').innerHTML=`
+    <div class="flex-between"><span class="text-muted">Véhicule</span><strong>${v?.plaque} — ${v?.marque}</strong></div>
+    <div class="flex-between" style="margin-top:8px"><span class="text-muted">Entrée</span><strong style="font-family:'DM Mono',monospace;font-size:12px">${formatDate(sortieEnCours.entree)}</strong></div>
+    <div class="flex-between" style="margin-top:8px"><span class="text-muted">Type</span><strong>${v?.type==='moto'?'🏍️ Moto':'🚗 Voiture'} — ${TARIFS[v?.type||'voiture'].journalier} F/jour</strong></div>
+    <div class="flex-between" style="margin-top:8px"><span class="text-muted">Ticket</span><strong style="color:#c67c0a">🎫 ${sortieEnCours.ticketId||'—'}</strong></div>`;
+  document.getElementById('st-sortie').value=new Date().toISOString().slice(0,16);
+  document.getElementById('montant-calcule').style.display='none';
+  openModal('modal-sortie');
+}
+function calculerSortie(){
+  const sortie=document.getElementById('st-sortie').value;
+  if(!sortie){toast('Heure de sortie requise','error');return;}
+  const v=getVehicule(sortieEnCours.vehicule);
+  const mont=calcMontant(v.type,sortieEnCours.entree,sortie);
+  document.getElementById('montant-val').textContent=mont.toLocaleString('fr-FR')+' F';
+  document.getElementById('montant-calcule').style.display='block';
+}
+function enregistrerSortie(){
+  const sortie=document.getElementById('st-sortie').value;
+  if(!sortie){toast('Heure de sortie requise','error');return;}
+  const v=getVehicule(sortieEnCours.vehicule);
+  const mont=calcMontant(v.type,sortieEnCours.entree,sortie);
+  sortieEnCours.sortie=sortie;sortieEnCours.montant=mont;sortieEnCours.statut='termine';
+  if(sortieEnCours.ticketId){const tk=getTicket(sortieEnCours.ticketId);if(tk){tk.heureSortie=sortie;tk.montantTotal=mont;}}
+  DB.stationnements=DB.stationnements.filter(s=>s.id!==sortieEnCours.id);
+  DB.stationnements_hist.push(sortieEnCours);
+  const p=getPlace(sortieEnCours.place);
+  if(p){p.statut='libre';p.vehicule=null;}
+  DB.paiements.push({id:DB.nextIds.paiement++,vehicule:sortieEnCours.vehicule,type:'journalier',date:new Date().toISOString().slice(0,10),montant:mont});
+  closeModal('modal-sortie');
+  renderStationnement();
+  toast(`Sortie enregistrée — ${mont} F · Ticket mis à jour 🎫`);
+  setTimeout(()=>{if(sortieEnCours.ticketId)voirTicket(sortieEnCours.ticketId);},800);
+}
+
+// ══ RÉSERVATIONS ══
+function renderReservations(){
+  document.getElementById('reservations-table').innerHTML=DB.reservations.length
+    ?DB.reservations.map(r=>`<tr>
+        <td>#${r.id}</td>
+        <td>${nomVehicule(r.vehicule)}</td>
+        <td>${r.date}</td><td>${r.debut}</td><td>${r.fin}</td>
+        <td><span class="pill ${r.statut==='confirmé'?'pill-green':r.statut==='annulé'?'pill-red':'pill-yellow'}">${r.statut}</span></td>
+        <td><button class="btn btn-recu btn-sm" onclick="afficherRecuReservation(${r.id})">🧾 Reçu</button></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="confirmerReservation(${r.id})">✓</button>
+          <button class="btn btn-danger btn-sm" onclick="annulerReservation(${r.id})">✗</button>
+        </td>
+      </tr>`).join('')
+    :'<tr><td colspan="8"><div class="empty-state"><div class="emoji">📅</div>Aucune réservation</div></td></tr>';
+}
+function confirmerReservation(id){const r=DB.reservations.find(r=>r.id===id);if(r){r.statut='confirmé';renderReservations();toast('Réservation confirmée');}}
+function annulerReservation(id){const r=DB.reservations.find(r=>r.id===id);if(r){r.statut='annulé';renderReservations();toast('Réservation annulée');}}
+
+// ══ PAIEMENTS ══
+function renderPaiements(){
+  const today=new Date().toISOString().slice(0,10);
+  const thisMonth=today.slice(0,7);
+  document.getElementById('pay-jour').textContent=DB.paiements.filter(p=>p.date===today).reduce((a,b)=>a+b.montant,0).toLocaleString('fr-FR')+' F';
+  document.getElementById('pay-mois').textContent=DB.paiements.filter(p=>p.date.startsWith(thisMonth)).reduce((a,b)=>a+b.montant,0).toLocaleString('fr-FR')+' F';
+  document.getElementById('pay-nb').textContent=DB.paiements.length;
+  document.getElementById('paiements-table').innerHTML=DB.paiements.map(p=>{
+    const v=getVehicule(p.vehicule);
+    return`<tr>
+      <td>#${p.id}</td><td>${p.date}</td>
+      <td>${v?v.plaque+' '+v.marque:'—'} ${v?.type==='moto'?'🏍️':'🚗'}</td>
+      <td><span class="pill ${p.type==='mensuel'?'pill-purple':'pill-yellow'}">${p.type}</span></td>
+      <td><span style="font-weight:700;color:var(--accent)">${p.montant.toLocaleString('fr-FR')} F</span></td>
+      <td><button class="btn btn-recu btn-sm" onclick="afficherRecuPaiement(${p.id})">🧾 Reçu de Paiement</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══ ABONNEMENTS ══
+function renderAbonnements(){
+  document.getElementById('abonnements-table').innerHTML=DB.abonnements.length
+    ?DB.abonnements.map(a=>{
+        const v=getVehicule(a.vehicule);
+        const u=getUtilisateur(a.utilisateur);
+        return`<tr>
+          <td>#${a.id}</td>
+          <td>${u?u.nom+' '+u.prenom:'—'}</td>
+          <td>${v?v.plaque+' ('+v.marque+')':'—'}</td>
+          <td>${a.debut}</td><td>${a.fin}</td>
+          <td>${v?.type==='moto'?'🏍️ Moto':'🚗 Voiture'}</td>
+          <td><span style="font-weight:700;color:var(--accent)">${a.montant.toLocaleString('fr-FR')} F</span></td>
+          <td><span class="pill ${a.statut==='actif'?'pill-green':'pill-red'}">${a.statut}</span></td>
+          <td>
+            <button class="btn btn-recu btn-sm" onclick="afficherRecuAbonnement(${a.id})">🧾 Reçu</button>
+            <button class="btn btn-danger btn-sm" onclick="renouvelerAbo(${a.id})" style="margin-left:4px">↺</button>
+          </td>
+        </tr>`;
+      }).join('')
+    :'<tr><td colspan="9"><div class="empty-state"><div class="emoji">♻️</div>Aucun abonnement actif</div></td></tr>';
+}
+
+// ══ UTILISATEURS ══
+function renderUtilisateurs(){
+  document.getElementById('utilisateurs-table').innerHTML=DB.utilisateurs.map(u=>`<tr>
+    <td>#${u.id}</td><td>${u.nom}</td><td>${u.prenom}</td>
+    <td style="font-family:'DM Mono',monospace">${u.telephone}</td>
+    <td>${u.email}</td>
+    <td><span class="pill ${u.type==='admin'?'pill-yellow':u.type==='agent'?'pill-purple':'pill-green'}">${u.type}</span></td>
+    <td><button class="btn btn-danger btn-sm" onclick="supprimerUtilisateur(${u.id})">Supprimer</button></td>
+  </tr>`).join('');
+}
+
+// ══ ACTIONS ══
+function updatePlacePreview(){
+  const type=document.getElementById('new-place-type').value;
+  const nb=parseInt(document.getElementById('new-place-nb').value)||0;
+  const total=DB.places.length;
+  const canAdd=Math.min(nb,MAX_PLACES-total);
+  document.getElementById('place-preview').innerHTML=
+    `Places ${type} existantes: <strong>${DB.places.filter(p=>p.type===type).length}</strong> · Total: <strong>${total}</strong>/${MAX_PLACES}<br>`+
+    (canAdd<nb?`⚠️ Seulement <strong>${canAdd}</strong> places peuvent être créées`:`✅ ${nb} place(s) seront créées`);
+}
+function ajouterPlaces(){
+  const type=document.getElementById('new-place-type').value;
+  let nb=parseInt(document.getElementById('new-place-nb').value)||1;
+  const canAdd=MAX_PLACES-DB.places.length;
+  if(canAdd<=0){toast(`Limite de ${MAX_PLACES} places atteinte !`,'error');return;}
+  nb=Math.min(nb,canAdd);
+  const prefix=type==='moto'?'M':'P';
+  for(let i=0;i<nb;i++){const num=String(DB.nextPlaceNums[type]++).padStart(4,'0');DB.places.push({id:prefix+num,type,statut:'libre',vehicule:null});}
+  closeModal('modal-add-place');renderPlaces();toast(`${nb} place(s) ${type} créée(s) !`);
+}
+function ajouterVehicule(){
+  const marque=document.getElementById('v-marque').value.trim();
+  const modele=document.getElementById('v-modele').value.trim();
+  const couleur=document.getElementById('v-couleur').value.trim();
+  const plaque=document.getElementById('v-plaque').value.trim();
+  const type=document.getElementById('v-type').value;
+  const prop=parseInt(document.getElementById('v-proprietaire').value);
+  if(!marque||!plaque){toast('Marque et plaque obligatoires','error');return;}
+  DB.vehicules.push({id:DB.nextIds.vehicule++,marque,modele,couleur,plaque:plaque.toUpperCase(),type,proprietaire:prop});
+  closeModal('modal-add-vehicule');renderVehicules();toast('Véhicule enregistré !');
+}
+function ajouterReservation(){
+  const vid=parseInt(document.getElementById('r-vehicule').value);
+  const date=document.getElementById('r-date').value;
+  const debut=document.getElementById('r-debut').value;
+  const fin=document.getElementById('r-fin').value;
+  if(!vid||!date||!debut||!fin){toast('Tous les champs requis','error');return;}
+  DB.reservations.push({id:DB.nextIds.reservation++,vehicule:vid,date,debut,fin,statut:'en attente'});
+  closeModal('modal-add-reservation');renderReservations();toast('Réservation créée !');
+}
+function calculerPaiement(){
+  const vid=parseInt(document.getElementById('p-vehicule').value);
+  const type=document.getElementById('p-type').value;
+  const v=getVehicule(vid);
+  if(!v)return;
+  const mont=TARIFS[v.type][type];
+  document.getElementById('p-montant-info').innerHTML=`💰 Montant : <strong style="color:var(--accent)">${mont} F</strong> (${v.type==='moto'?'🏍️ Moto':'🚗 Voiture'} — ${type})`;
+}
+function ajouterPaiement(){
+  const vid=parseInt(document.getElementById('p-vehicule').value);
+  const type=document.getElementById('p-type').value;
+  const date=document.getElementById('p-date').value;
+  const v=getVehicule(vid);
+  if(!v||!date){toast('Champs manquants','error');return;}
+  const mont=TARIFS[v.type][type];
+  DB.paiements.push({id:DB.nextIds.paiement++,vehicule:vid,type,date,montant:mont});
+  closeModal('modal-add-paiement');renderPaiements();toast(`Paiement de ${mont} F enregistré !`);
+}
+function ajouterAbonnement(){
+  const uid=parseInt(document.getElementById('ab-utilisateur').value);
+  const vid=parseInt(document.getElementById('ab-vehicule').value);
+  const debut=document.getElementById('ab-debut').value;
+  if(!uid||!vid||!debut){toast('Champs manquants','error');return;}
+  const v=getVehicule(vid);
+  const mont=TARIFS[v.type].mensuel;
+  const fin=new Date(debut);fin.setDate(fin.getDate()+30);
+  DB.abonnements.push({id:DB.nextIds.abonnement++,utilisateur:uid,vehicule:vid,debut,fin:fin.toISOString().slice(0,10),montant:mont,statut:'actif'});
+  DB.paiements.push({id:DB.nextIds.paiement++,vehicule:vid,type:'mensuel',date:debut,montant:mont});
+  closeModal('modal-add-abonnement');renderAbonnements();toast(`Abonnement activé — ${mont} F`);
+}
+function updateAboPrix(){
+  const vid=parseInt(document.getElementById('ab-vehicule').value);
+  const debut=document.getElementById('ab-debut').value;
+  const v=getVehicule(vid);if(!v)return;
+  const mont=TARIFS[v.type].mensuel;
+  const fin=debut?(()=>{const d=new Date(debut);d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);})():'—';
+  document.getElementById('ab-info').innerHTML=`Type : <strong>${v.type==='moto'?'🏍️ Moto':'🚗 Voiture'}</strong> · Fin : <strong>${fin}</strong> · Montant : <strong style="color:var(--accent)">${mont} F</strong>`;
+}
+function renouvelerAbo(id){
+  const a=DB.abonnements.find(x=>x.id===id);if(!a)return;
+  const v=getVehicule(a.vehicule);
+  const mont=TARIFS[v.type].mensuel;
+  const debut=a.fin;const fin=new Date(debut);fin.setDate(fin.getDate()+30);
+  a.debut=debut;a.fin=fin.toISOString().slice(0,10);a.montant=mont;a.statut='actif';
+  DB.paiements.push({id:DB.nextIds.paiement++,vehicule:a.vehicule,type:'mensuel',date:debut,montant:mont});
+  renderAbonnements();toast(`Abonnement renouvelé — ${mont} F`);
+}
+function ajouterUtilisateur(){
+  const nom=document.getElementById('u-nom').value.trim();
+  const prenom=document.getElementById('u-prenom').value.trim();
+  const tel=document.getElementById('u-tel').value.trim();
+  const email=document.getElementById('u-email').value.trim();
+  const type=document.getElementById('u-type').value;
+  if(!nom||!prenom){toast('Nom et prénom requis','error');return;}
+  DB.utilisateurs.push({id:DB.nextIds.utilisateur++,nom:nom.toUpperCase(),prenom,telephone:tel,email,type});
+  closeModal('modal-add-utilisateur');renderUtilisateurs();toast('Utilisateur créé !');
+}
+function supprimerUtilisateur(id){DB.utilisateurs=DB.utilisateurs.filter(u=>u.id!==id);renderUtilisateurs();toast('Utilisateur supprimé');}
+
+// ══ SIMULATEUR ══
+function simuler(){
+  const type=document.getElementById('sim-type')?.value;
+  const jours=parseInt(document.getElementById('sim-jours')?.value)||1;
+  if(!type)return;
+  const tarif=TARIFS[type];
+  const total=jours*tarif.journalier;
+  const abos=Math.floor(jours/30);const reste=jours%30;
+  const avecAbo=abos*tarif.mensuel+reste*tarif.journalier;
+  const eco=total-avecAbo;
+  document.getElementById('sim-result').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div><div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px">TARIF JOURNALIER</div><div style="font-size:26px;font-weight:800;color:var(--accent)">${total.toLocaleString('fr-FR')} F</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${jours} j × ${tarif.journalier} F</div></div>
+      <div><div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px">AVEC ABONNEMENT</div><div style="font-size:26px;font-weight:800;color:var(--accent2)">${avecAbo.toLocaleString('fr-FR')} F</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${abos} abo(s) + ${reste} j</div></div>
+      <div><div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px">ÉCONOMIE</div><div style="font-size:26px;font-weight:800;color:${eco>=0?'var(--accent2)':'var(--red)'}">${eco>=0?'+':''}${eco.toLocaleString('fr-FR')} F</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${eco>0?'Économie abonnement':'Pas d\'économie'}</div></div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════
+// ══ REÇUS PROFESSIONNELS ══
+// ════════════════════════════════════════════
+
+function genBarcode(seed){
+  let html='';
+  const rng=((s)=>{let x=s;return()=>{x=((x*1664525)+1013904223)&0xffffffff;return(x>>>0)/0xffffffff;}})(seed||12345);
+  for(let i=0;i<48;i++){
+    const w=rng()>.45?3:1;
+    const op=.5+rng()*.5;
+    html+=`<rect x="${i*5+8}" y="0" width="${w}" height="45" fill="#1a3a5c" opacity="${op}"/>`;
+  }
+  return html;
+}
+
+function buildRecuHTML({recuId,type,titre,vehicule,montant,montantDetail,infoRows,statut,dateEmission,extra}){
+  const v=vehicule;
+  const typeClass=v?.type||'voiture';
+  const typeIcon=typeClass==='moto'?'🏍️':'🚗';
+  const typeLabel=typeClass==='moto'?'Moto / Scooter':'Voiture / 4 Roues';
+  const typeVBadge=typeClass==='moto'
+    ?`<span class="recu-vehicle-type-badge moto">🏍️ Moto</span>`
+    :`<span class="recu-vehicle-type-badge voiture">🚗 Voiture</span>`;
+  const statutHtml=statut==='payé'
+    ?`<div class="recu-statut-bar paye">✅ PAIEMENT CONFIRMÉ</div>`
+    :statut==='confirmé'
+      ?`<div class="recu-statut-bar paye">✅ RÉSERVATION CONFIRMÉE</div>`
+      :statut==='actif'
+        ?`<div class="recu-statut-bar paye">✅ ABONNEMENT ACTIF</div>`
+        :`<div class="recu-statut-bar attente">⏳ EN ATTENTE</div>`;
+  const seed=recuId.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const barcodeLines=genBarcode(seed);
+  const rowsHTML=infoRows.map(r=>`<div class="recu-row"><span class="rl">${r.label}</span><span class="rv">${r.value}</span></div>`).join('');
+  return`<div class="recu-container">
+    <div class="recu-header">
+      <div class="recu-logo-line">
+        <div class="recu-logo-icon">🅿</div>
+        <div>
+          <div class="recu-company-name">ParkSmart</div>
+          <div class="recu-company-sub">Système de Gestion de Parking · Bamako, Mali</div>
+        </div>
+      </div>
+      <div class="recu-type-badge">${titre}</div>
+      <div class="recu-id-area">
+        <div class="recu-id">${recuId}</div>
+        <div class="recu-date-top">
+          <div>Émis le</div>
+          <div><strong>${dateEmission}</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="recu-vehicle-band">
+      <div class="recu-vehicle-icon ${typeClass}">${typeIcon}</div>
+      <div class="recu-vehicle-details">
+        <div class="recu-vehicle-plaque">${v?.plaque||'—'}</div>
+        <div class="recu-vehicle-info">${v?v.marque+' '+v.modele+' · '+v.couleur:'—'}</div>
+      </div>
+      ${typeVBadge}
+    </div>
+    <div class="recu-body">
+      <div class="recu-section-title">Détails</div>
+      <div class="recu-rows">${rowsHTML}</div>
+      ${extra||''}
+      <div class="recu-total-box">
+        <div class="recu-total-label">Montant Total</div>
+        <div class="recu-total-amount">${montant.toLocaleString('fr-FR')}<span class="recu-total-currency">FCFA</span></div>
+        <div class="recu-total-detail">${montantDetail}</div>
+      </div>
+      ${statutHtml}
+      <div class="recu-barcode-zone">
+        <svg class="recu-barcode-svg" viewBox="0 0 260 45" xmlns="http://www.w3.org/2000/svg">${barcodeLines}</svg>
+        <div class="recu-barcode-text">${recuId}</div>
+      </div>
+    </div>
+    <div class="recu-footer">
+      <strong>ParkSmart</strong> · Parking Sécurisé · Bamako, Mali<br>
+      Tél: +223 XX XX XX XX · parksmart@mail.com<br>
+      Ce reçu est votre justificatif officiel de paiement. Conservez-le.
+    </div>
+  </div>`;
+}
+
+// Reçu Paiement
+function afficherRecuPaiement(id){
+  const p=DB.paiements.find(x=>x.id===id);
+  if(!p)return;
+  const v=getVehicule(p.vehicule);
+  const recuId=genRecuId('PAY');
+  const html=buildRecuHTML({
+    recuId,
+    type:'paiement',
+    titre:'🧾 REÇU DE PAIEMENT',
+    vehicule:v,
+    montant:p.montant,
+    montantDetail:`Tarif ${p.type} · ${v?.type==='moto'?'Moto':'Voiture'}`,
+    dateEmission:nowStr(),
+    statut:'payé',
+    infoRows:[
+      {label:'N° Paiement',value:`#${p.id}`},
+      {label:'Date de paiement',value:new Date(p.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})},
+      {label:'Type de tarif',value:p.type==='mensuel'?'Abonnement Mensuel':'Journalier'},
+      {label:'Véhicule',value:v?v.plaque+' ('+v.marque+' '+v.modele+')':'—'},
+      {label:'Type de véhicule',value:v?.type==='moto'?'🏍️ Moto':'🚗 Voiture'},
+      {label:'Mode de paiement',value:'Espèces'},
+      {label:'Caissier',value:currentUser?.nom||'Admin'},
+    ]
+  });
+  document.getElementById('recu-content').innerHTML=html;
+  openModal('modal-recu');
+}
+
+// Reçu Abonnement
+function afficherRecuAbonnement(id){
+  const a=DB.abonnements.find(x=>x.id===id);
+  if(!a)return;
+  const v=getVehicule(a.vehicule);
+  const u=getUtilisateur(a.utilisateur);
+  const recuId=genRecuId('ABO');
+  const html=buildRecuHTML({
+    recuId,
+    type:'abonnement',
+    titre:'♻️ REÇU D\'ABONNEMENT',
+    vehicule:v,
+    montant:a.montant,
+    montantDetail:`Abonnement 30 jours · ${v?.type==='moto'?'Moto 1 500 F':'Voiture 9 000 F'}`,
+    dateEmission:nowStr(),
+    statut:'actif',
+    infoRows:[
+      {label:'N° Abonnement',value:`#${a.id}`},
+      {label:'Abonné',value:u?u.nom+' '+u.prenom:'—'},
+      {label:'Téléphone',value:u?.telephone||'—'},
+      {label:'Véhicule',value:v?v.plaque+' ('+v.marque+' '+v.modele+')':'—'},
+      {label:'Type de véhicule',value:v?.type==='moto'?'🏍️ Moto':'🚗 Voiture'},
+      {label:'Date de début',value:new Date(a.debut).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})},
+      {label:'Date de fin',value:new Date(a.fin).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})},
+      {label:'Durée',value:'30 jours'},
+      {label:'Tarif mensuel',value:a.montant.toLocaleString('fr-FR')+' FCFA'},
+    ]
+  });
+  document.getElementById('recu-content').innerHTML=html;
+  openModal('modal-recu');
+}
+
+// Reçu Réservation
+function afficherRecuReservation(id){
+  const r=DB.reservations.find(x=>x.id===id);
+  if(!r)return;
+  const v=getVehicule(r.vehicule);
+  const recuId=genRecuId('RES');
+  const html=buildRecuHTML({
+    recuId,
+    type:'reservation',
+    titre:'📅 REÇU DE RÉSERVATION',
+    vehicule:v,
+    montant:0,
+    montantDetail:'Réservation de place · Sans frais supplémentaires',
+    dateEmission:nowStr(),
+    statut:r.statut,
+    infoRows:[
+      {label:'N° Réservation',value:`#${r.id}`},
+      {label:'Véhicule',value:v?v.plaque+' ('+v.marque+' '+v.modele+')':'—'},
+      {label:'Type de véhicule',value:v?.type==='moto'?'🏍️ Moto':'🚗 Voiture'},
+      {label:'Date',value:new Date(r.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})},
+      {label:'Heure de début',value:r.debut},
+      {label:'Heure de fin',value:r.fin},
+      {label:'Statut',value:r.statut.toUpperCase()},
+    ]
+  });
+  document.getElementById('recu-content').innerHTML=html;
+  openModal('modal-recu');
+}
+
+// Reçu Stationnement terminé
+function afficherRecuStationnement(id){
+  const s=DB.stationnements_hist.find(x=>x.id===id);
+  if(!s)return;
+  const v=getVehicule(s.vehicule);
+  const recuId=genRecuId('STA');
+  const h=diffHeures(s.entree,s.sortie);
+  const jours=Math.ceil(h/24)||1;
+  const html=buildRecuHTML({
+    recuId,
+    type:'stationnement',
+    titre:'🅿 REÇU DE STATIONNEMENT',
+    vehicule:v,
+    montant:s.montant||0,
+    montantDetail:`${jours} jour(s) × ${v?TARIFS[v.type].journalier:0} F/jour`,
+    dateEmission:nowStr(),
+    statut:'payé',
+    infoRows:[
+      {label:'N° Stationnement',value:`#${s.id}`},
+      {label:'Ticket',value:s.ticketId||'—'},
+      {label:'Véhicule',value:v?v.plaque+' ('+v.marque+' '+v.modele+')':'—'},
+      {label:'Type de véhicule',value:v?.type==='moto'?'🏍️ Moto':'🚗 Voiture'},
+      {label:'Entrée',value:formatDate(s.entree)},
+      {label:'Sortie',value:formatDate(s.sortie)},
+      {label:'Durée',value:h<1?`${Math.round(h*60)} min`:`${h.toFixed(1)} h (${jours} jour(s))`},
+      {label:'Tarif/jour',value:v?TARIFS[v.type].journalier+' FCFA':'—'},
+    ]
+  });
+  document.getElementById('recu-content').innerHTML=html;
+  openModal('modal-recu');
+}
+
+function imprimerRecu(){
+  const zone=document.getElementById('print-zone-recu');
+  const original=document.body.innerHTML;
+  document.body.innerHTML=zone.innerHTML;
+  window.print();
+  document.body.innerHTML=original;
+  location.reload();
+}
+
+// ══ MODALS ══
+function openModal(id){
+  const today=new Date().toISOString().slice(0,16);
+  if(id==='modal-add-place')updatePlacePreview();
+  if(id==='modal-add-vehicule')document.getElementById('v-proprietaire').innerHTML=DB.utilisateurs.map(u=>`<option value="${u.id}">${u.nom} ${u.prenom}</option>`).join('');
+  if(id==='modal-entree'){
+    document.getElementById('st-vehicule').innerHTML=DB.vehicules.map(v=>`<option value="${v.id}">${v.plaque} — ${v.marque} (${v.type})</option>`).join('');
+    document.getElementById('st-entree').value=today;
+    filtrerPlaces();
+  }
+  if(id==='modal-add-reservation'){
+    document.getElementById('r-vehicule').innerHTML=DB.vehicules.map(v=>`<option value="${v.id}">${v.plaque} — ${v.marque}</option>`).join('');
+    document.getElementById('r-date').value=new Date().toISOString().slice(0,10);
+  }
+  if(id==='modal-add-paiement'){
+    document.getElementById('p-vehicule').innerHTML=DB.vehicules.map(v=>`<option value="${v.id}">${v.plaque} — ${v.marque} (${v.type})</option>`).join('');
+    document.getElementById('p-date').value=new Date().toISOString().slice(0,10);
+    calculerPaiement();
+  }
+  if(id==='modal-add-abonnement'){
+    document.getElementById('ab-utilisateur').innerHTML=DB.utilisateurs.map(u=>`<option value="${u.id}">${u.nom} ${u.prenom}</option>`).join('');
+    document.getElementById('ab-vehicule').innerHTML=DB.vehicules.map(v=>`<option value="${v.id}">${v.plaque} (${v.type})</option>`).join('');
+    document.getElementById('ab-debut').value=new Date().toISOString().slice(0,10);
+    updateAboPrix();
+  }
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('open');});});
+function filtrerPlaces(){
+  const vid=parseInt(document.getElementById('st-vehicule').value);
+  const v=getVehicule(vid);if(!v)return;
+  const libres=DB.places.filter(p=>p.statut==='libre'&&p.type===v.type);
+  document.getElementById('st-place').innerHTML=libres.length
+    ?libres.map(p=>`<option value="${p.id}">${p.id}</option>`).join('')
+    :'<option value="">Aucune place disponible</option>';
+}
+
+// ══ HORLOGE ══
+function updateTime(){const el=document.getElementById('current-time');if(el)el.textContent=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(updateTime,1000);updateTime();
+</script>
+</body>
+</html>
